@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Расписание</title>
+<style>
+:root{--bg:#eef1f6;--surface:#fff;--sunk:#f5f7fb;--line:#e1e6ef;--ink:#16213a;--mute:#66728c;--accent:#2f5bea;--accent-ink:#fff;--today:#eaf0ff;--danger:#d6264f;--sh:0 1px 2px rgba(22,33,58,.06),0 12px 32px -16px rgba(22,33,58,.25);--l:94%;--ls:80%;--lb:50%;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1424;--surface:#161e33;--sunk:#1b2540;--line:#28345a;--ink:#e8edfa;--mute:#93a0c0;--accent:#7c9bff;--accent-ink:#0e1424;--today:#1d2a52;--danger:#ff6b8b;--sh:0 12px 32px -16px #000;--l:22%;--ls:35%;--lb:62%;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1424;--surface:#161e33;--sunk:#1b2540;--line:#28345a;--ink:#e8edfa;--mute:#93a0c0;--accent:#7c9bff;--accent-ink:#0e1424;--today:#1d2a52;--danger:#ff6b8b;--sh:0 12px 32px -16px #000;--l:22%;--ls:35%;--lb:62%;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;min-height:100vh;padding:clamp(.75rem,3vw,2rem)}
+.app{max-width:1240px;margin:0 auto;display:grid;gap:1.1rem}
+.app[hidden],.wv[hidden]{display:none}
+header{display:flex;align-items:end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;letter-spacing:-.03em;line-height:1}
+.sub{color:var(--mute);margin-top:.4rem}
+.tools{display:flex;gap:.5rem;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:.6rem 1rem;font-weight:600;transition:background .15s,border-color .15s}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.primary:hover{filter:brightness(1.08);border-color:transparent}
+.danger:hover{border-color:var(--danger);color:var(--danger)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh)}
+form.add{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem;padding:1.1rem;align-items:end}
+form.add .wide{grid-column:span 2}
+label{display:grid;gap:.3rem;font-size:.82rem;color:var(--mute);font-weight:600}
+input,select{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:.65rem .8rem;width:100%;min-height:42px}
+.err{grid-column:1/-1;color:var(--danger);font-weight:600;margin:0}
+.err:empty{display:none}
+.scroller{overflow-x:auto;border-radius:20px}
+.grid{min-width:880px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.dh{padding:.8rem .4rem;text-align:center;font-weight:700;background:var(--sunk);border-bottom:1px solid var(--line)}
+.dh+.dh,.col+.col{border-left:1px solid var(--line)}
+.dh.today{background:var(--accent);color:var(--accent-ink)}
+.col{padding:.5rem;display:grid;gap:.5rem;align-content:start;min-height:220px}
+.col.today{background:var(--today)}
+.none{color:var(--mute);text-align:center;margin-top:1.5rem;font-size:.85rem}
+.lesson{--h:210;position:relative;background:hsl(var(--h) var(--ls) var(--l));border-left:4px solid hsl(var(--h) 65% var(--lb));border-radius:10px;padding:.5rem 1.7rem .55rem .6rem;display:grid;gap:.15rem;font-size:.8rem}
+.lesson .tm{font-weight:700;font-variant-numeric:tabular-nums;font-size:.78rem}
+.lesson .tm i{font-style:normal;font-weight:500;color:var(--mute);margin-left:.4rem}
+.lesson strong{font-size:.88rem;line-height:1.2;overflow-wrap:anywhere}
+.lesson span{color:var(--mute);font-size:.74rem}
+.add [hidden]{display:none}
+.del{position:absolute;top:4px;right:4px;width:22px;height:22px;padding:0;border:0;background:transparent;color:var(--mute);border-radius:50%;line-height:1}
+.del:hover{background:var(--danger);color:#fff}
+.foot{color:var(--mute)}
+.wv{max-width:440px;margin:0 auto;display:grid;gap:1rem}
+.wtabs{display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem}
+.wtabs button{padding:.65rem 0;border-radius:10px}
+.wtabs .sel{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.wtabs .td:not(.sel){border-color:var(--accent)}
+.wv h2{margin:.3rem 0 0;font-size:1.8rem;letter-spacing:-.02em;line-height:1.1}
+.wlist{display:grid;gap:.6rem}
+.wl{--h:210;display:grid;grid-template-columns:62px 1fr;gap:.8rem;padding:.9rem;border-radius:16px;background:hsl(var(--h) var(--ls) var(--l));border-left:5px solid hsl(var(--h) 65% var(--lb))}
+.wl.now{outline:2px solid var(--accent)}
+.wt{display:grid;align-content:start;font-variant-numeric:tabular-nums}
+.wt span{color:var(--mute);font-size:.8rem}
+.wl strong{font-size:1.08rem;display:block;overflow-wrap:anywhere}
+.wl small{display:block;color:var(--mute)}
+.wl em{font-style:normal;color:var(--accent);font-weight:700;font-size:.8rem}
+.wempty{padding:2rem 1rem;text-align:center;color:var(--mute);margin:0}
+.whint{color:var(--mute);font-size:.82rem;margin:0}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Расписание</h1>
+      <div class="sub" id="stats"></div>
+    </div>
+    <div class="tools">
+      <button id="themeBtn" type="button">Тема: авто</button>
+      <button id="widgetBtn" type="button" class="primary">Виджет дня</button>
+      <button id="clearBtn" type="button" class="danger">Очистить всё</button>
+    </div>
+  </header>
+
+  <form class="add panel" id="addForm" autocomplete="off" novalidate>
+    <label>День<select id="day"></select></label>
+    <label>Тип<select id="kind"><option>Урок</option><option>Пара</option><option>Другое</option></select></label>
+    <label><span id="lS">Начало</span><input type="time" id="start" value="08:30" required></label>
+    <label><span id="lE">Конец</span><input type="time" id="end" value="09:15" required></label>
+    <label hidden id="w2a">2-й урок: начало<input type="time" id="start2" value="09:20"></label>
+    <label hidden id="w2b">2-й урок: конец<input type="time" id="end2" value="10:05"></label>
+    <label class="wide">Предмет<input id="subject" maxlength="40" placeholder="Например: Математика" required></label>
+    <label>Преподаватель<input id="teacher" maxlength="30" placeholder="Иванов И. И."></label>
+    <label>Аудитория<input id="room" maxlength="15" placeholder="305"></label>
+    <button class="primary" type="submit">Добавить</button>
+    <p class="err" id="err" role="alert"></p>
+  </form>
+
+  <div class="panel scroller"><div class="grid" id="grid"></div></div>
+  <div class="foot">Время любое. Пара состоит из двух уроков, у каждого своё время: второй подставляется через 5 минут после первого, но его можно изменить. Занятия хранятся в этом браузере.</div>
+</div>
+
+<main class="wv" id="wview" hidden>
+  <div class="wtabs" id="wtabs" role="group" aria-label="День недели"></div>
+  <h2 id="wtitle"></h2>
+  <div class="wlist" id="wlist"></div>
+  <p class="whint">Чтобы поставить на экран телефона: откройте страницу в браузере, выберите день и нажмите «Добавить на главный экран». Ярлык будет открывать именно этот день.</p>
+  <button type="button" id="backBtn">Назад к редактору</button>
+</main>
+
+<script>
+(function(){
+const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const FULL=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+const KEYS=['mon','tue','wed','thu','fri','sat','sun'];
+const OLD=[['08:30','09:15','09:20','10:05'],['10:15','11:00','11:20','12:05'],['12:25','13:10','13:30','14:15'],['14:25','15:10','15:15','16:00']];
+const KEY='schedule_app_data_v4',OLDKEY='schedule_app_data_v3',THEME='schedule_theme';
+const $=id=>document.getElementById(id);
+const todayIdx=(new Date().getDay()+6)%7;
+let data=[];
+
+const pad=n=>String(n).padStart(2,'0');
+const toM=x=>{const p=x.split(':');return Number(p[0])*60+Number(p[1])};
+const fromM=m=>pad(Math.floor(m/60)%24)+':'+pad(m%60);
+const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function hue(s){let h=0;s=(s||'').toLowerCase();for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%360;return h}
+
+function seed(){data=[
+  {day:0,start:'08:30',end:'09:15',start2:'09:20',end2:'10:05',kind:'Пара',subject:'Высшая математика',teacher:'Петров А. В.',room:'312'},
+  {day:0,start:'10:15',end:'11:00',start2:'11:20',end2:'12:05',kind:'Пара',subject:'Программирование',teacher:'Смирнова Е. К.',room:'405'},
+  {day:1,start:'12:25',end:'13:10',kind:'Урок',subject:'Физика',teacher:'Иванов Д. С.',room:'210'},
+  {day:3,start:'08:30',end:'09:15',kind:'Урок',subject:'Английский язык',teacher:'Козлова М. И.',room:'108'},
+  {day:4,start:'14:25',end:'15:10',kind:'Урок',subject:'История',teacher:'Фёдоров П. П.',room:'301'}]}
+function load(){
+  try{
+    const s=localStorage.getItem(KEY),o=localStorage.getItem(OLDKEY);
+    if(s)data=JSON.parse(s);
+    else if(o){ // перенос из старой версии с фиксированными парами
+      data=JSON.parse(o).filter(l=>OLD[l.time]).map(l=>({day:l.day,start:OLD[l.time][0],end:OLD[l.time][3],kind:'Пара',subject:l.subject,teacher:l.teacher,room:l.room}));
+    }else seed();
+  }catch(e){seed()}
+  if(!Array.isArray(data))data=[];
+  data=data.filter(l=>l&&l.start&&l.end).map(l=>{
+    const r={...l,start:fromM(toM(l.start)),end:fromM(toM(l.end)),id:l.id||'g'+Math.random().toString(36).slice(2,9)};
+    if(r.kind==='Пара'&&!r.start2){ // старая пара одним промежутком делится на два урока
+      const o=OLD.find(x=>x[0]===r.start&&x[3]===r.end);
+      if(o){r.end=o[1];r.start2=o[2];r.end2=o[3]}
+      else{const e2=r.end;r.end=fromM(toM(r.start)+45);r.start2=fromM(toM(r.end)+5);r.end2=e2}
+    }
+    return r;
+  });
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+const dayList=d=>data.filter(l=>l.day===d).sort((a,b)=>a.start.localeCompare(b.start));
+const endOf=l=>l.end2||l.end;
+const tmHtml=l=>l.start2?`<div class="tm">${l.start}–${l.end}<i>1-й урок</i></div><div class="tm">${l.start2}–${l.end2}<i>2-й урок</i></div>`:`<div class="tm">${l.start}–${l.end}<i>${esc((l.kind||'').toLowerCase())}</i></div>`;
+
+function render(){
+  $('grid').innerHTML=DAYS.map((d,i)=>`<div class="dh${i===todayIdx?' today':''}" title="${FULL[i]}">${d}</div>`).join('')
+  +DAYS.map((d,i)=>{
+    const ls=dayList(i);
+    return `<div class="col${i===todayIdx?' today':''}">`+(ls.length?ls.map(l=>`<div class="lesson" style="--h:${hue(l.subject)}"><button type="button" class="del" data-id="${esc(l.id)}" aria-label="Удалить занятие" title="Удалить">✕</button>${tmHtml(l)}<strong>${esc(l.subject)}</strong>${l.teacher?`<span>${esc(l.teacher)}</span>`:''}${l.room?`<span>ауд. ${esc(l.room)}</span>`:''}</div>`).join(''):'<div class="none">Нет занятий</div>')+'</div>';
+  }).join('');
+  $('stats').textContent=data.length?`Занятий в неделю: ${data.length}`:'Занятий пока нет — добавьте первое';
+}
+
+// время подставляется цепочкой, пока поле не изменили вручную
+const touched={};
+function suggest(){
+  const k=$('kind').value,s=$('start').value;if(!s)return;
+  if(!touched.end)$('end').value=fromM(toM(s)+(k==='Другое'?60:45));
+  if(k==='Пара'){
+    if(!touched.start2&&$('end').value)$('start2').value=fromM(toM($('end').value)+5);
+    if(!touched.end2&&$('start2').value)$('end2').value=fromM(toM($('start2').value)+45);
+  }
+}
+function kindUi(){
+  const p=$('kind').value==='Пара';
+  $('w2a').hidden=!p;$('w2b').hidden=!p;
+  $('lS').textContent=p?'1-й урок: начало':'Начало';
+  $('lE').textContent=p?'1-й урок: конец':'Конец';
+  suggest();
+}
+$('start').addEventListener('input',suggest);
+$('kind').addEventListener('change',kindUi);
+['end','start2','end2'].forEach(id=>$(id).addEventListener('input',()=>{touched[id]=true;suggest()}));
+
+$('addForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const subject=$('subject').value.trim(),start=$('start').value,end=$('end').value,pair=$('kind').value==='Пара',start2=$('start2').value,end2=$('end2').value;
+  let msg='';
+  if(!subject)msg='Введите название предмета.';
+  else if(!start||!end)msg='Укажите время начала и конца.';
+  else if(toM(end)<=toM(start))msg='Конец должен быть позже начала.';
+  else if(pair&&(!start2||!end2))msg='Укажите время второго урока.';
+  else if(pair&&toM(start2)<toM(end))msg='Второй урок должен начаться после конца первого.';
+  else if(pair&&toM(end2)<=toM(start2))msg='Конец второго урока должен быть позже его начала.';
+  $('err').textContent=msg;
+  if(msg){(!subject?$('subject'):$('end')).focus();return}
+  data.push({id:'l'+Date.now()+Math.random().toString(36).slice(2,6),day:+$('day').value,start,end,...(pair?{start2,end2}:{}),kind:$('kind').value,subject,teacher:$('teacher').value.trim(),room:$('room').value.trim()});
+  save();render();
+  ['subject','teacher','room'].forEach(k=>$(k).value='');
+  for(const k in touched)delete touched[k];
+  $('subject').focus();
+});
+$('grid').addEventListener('click',e=>{
+  const b=e.target.closest('.del');if(!b)return;
+  data=data.filter(l=>l.id!==b.dataset.id);save();render();
+});
+$('clearBtn').addEventListener('click',()=>{
+  if(data.length&&confirm('Удалить все занятия? Действие нельзя отменить.')){data=[];save();render()}
+});
+
+// ----- Тема -----
+let theme='auto';
+try{theme=localStorage.getItem(THEME)||'auto'}catch(e){}
+function applyTheme(){
+  const r=document.documentElement;
+  if(theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',theme);
+  $('themeBtn').textContent='Тема: '+({auto:'авто',light:'светлая',dark:'тёмная'}[theme]);
+}
+$('themeBtn').addEventListener('click',()=>{
+  theme={auto:'light',light:'dark',dark:'auto'}[theme];
+  try{localStorage.setItem(THEME,theme)}catch(e){}
+  applyTheme();
+});
+
+// ----- Виджет дня -----
+function renderW(d){
+  $('wtabs').innerHTML=DAYS.map((n,i)=>`<button type="button" data-d="${i}" class="${i===d?'sel':''}${i===todayIdx?' td':''}" aria-pressed="${i===d}">${n}</button>`).join('');
+  $('wtitle').textContent=FULL[d]+(d===todayIdx?' — сегодня':'');
+  const ls=dayList(d),n=new Date(),mins=n.getHours()*60+n.getMinutes();
+  $('wlist').innerHTML=ls.length?ls.map(l=>{
+    const e=endOf(l),cur=d===todayIdx&&mins>=toM(l.start)&&mins<toM(e);
+    let st='идёт сейчас';
+    if(l.start2)st=mins<toM(l.end)?'идёт 1-й урок':mins>=toM(l.start2)?'идёт 2-й урок':'перемена';
+    const parts=l.start2?`<small>1-й урок: ${l.start}–${l.end}</small><small>2-й урок: ${l.start2}–${l.end2}</small>`:'';
+    return `<div class="wl${cur?' now':''}" style="--h:${hue(l.subject)}"><div class="wt"><b>${l.start}</b><span>${e}</span></div><div><strong>${esc(l.subject)}</strong>${parts}${l.teacher?`<small>${esc(l.teacher)}</small>`:''}${l.room?`<small>ауд. ${esc(l.room)}</small>`:''}${cur?`<em>${st}</em>`:''}</div></div>`;
+  }).join(''):'<p class="wempty">В этот день занятий нет</p>';
+}
+function route(){
+  const m=/^#widget-(mon|tue|wed|thu|fri|sat|sun)$/.exec(location.hash);
+  $('wview').hidden=!m;document.querySelector('.app').hidden=!!m;
+  if(m)renderW(KEYS.indexOf(m[1]));
+}
+window.addEventListener('hashchange',route);
+$('widgetBtn').addEventListener('click',()=>{location.hash='widget-'+KEYS[todayIdx]});
+$('backBtn').addEventListener('click',()=>{location.hash='editor'});
+$('wtabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)location.hash='widget-'+KEYS[+b.dataset.d]});
+
+$('day').innerHTML=FULL.map((d,i)=>`<option value="${i}"${i===todayIdx?' selected':''}>${d}</option>`).join('');
+kindUi();load();applyTheme();render();route();
+})();
+</script>
+</body>
+</html>
